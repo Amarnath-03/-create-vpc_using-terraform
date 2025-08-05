@@ -1,78 +1,61 @@
-# -create-vpc_using-terraform
-
 resource "aws_vpc" "Vcube138" {
-  cidr_block       = "11.0.0.0/16"
-  tags =   {
-     Name = "Amar-vpc"
+  cidr_block = "10.0.0.0/16"
+  tags = {
+    Name = "Amar-vpc"
   }
 }
+##public subnet
 resource "aws_subnet" "public" {
-  vpc_id     = aws_vpc.Vcube138.id
-  cidr_block = "11.0.1.0/24"
-
+  vpc_id                  = aws_vpc.Vcube138.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = "ap-southeast-1a"
   tags = {
     Name = "public"
   }
 }
-resource "aws_subnet" "pravite" {
-  vpc_id     = aws_vpc.Vcube138.id
-  cidr_block = "11.0.2.0/24"
-
+##private subnet
+resource "aws_subnet" "private" {
+  vpc_id                  = aws_vpc.Vcube138.id
+  cidr_block              = "10.0.2.0/24"
+  availability_zone       = "ap-southeast-1b"
   tags = {
     Name = "private"
   }
 }
-resource "aws_route_table" "public-route" {
+##internet gateway
+resource "aws_internet_gateway" "amar_igw" {
+  vpc_id = aws_vpc.Vcube138.id
+  tags = {
+    Name = "amar-igw"
+  }
+}
+##public route table
+resource "aws_route_table" "public_route" {
   vpc_id = aws_vpc.Vcube138.id
 
   route {
-    cidr_block = "11.0.1.0/24"
-    gateway_id = aws_internet_gateway.amar-igw.id
-  }
-
-  route {
-    ipv6_cidr_block        = "::/0"
-    egress_only_gateway_id = aws_egress_only_internet_gateway.example.id
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.amar_igw.id
   }
 
   tags = {
     Name = "public-route"
   }
 }
-resource "aws_route_table" "private-route" {
+##private route table
+resource "aws_route_table" "private_route" {
   vpc_id = aws_vpc.Vcube138.id
-
-  route {
-    cidr_block = "11.0.1.0/24"
-  }
-
-  route {
-    ipv6_cidr_block        = "::/0"
-    egress_only_gateway_id = aws_egress_only_internet_gateway.example.id
-  }
-
   tags = {
     Name = "private-route"
   }
 }
-resource "aws_internet_gateway" "amar-igw" {
-  vpc_id = aws_vpc.Vcube138.id
-
-  tags = {
-    Name = "amar-igw"
-  }
-}
+##public route table association
 resource "aws_route_table_association" "a" {
   subnet_id      = aws_subnet.public.id
-  route_table_id = aws_route_table.public-route.id
+  route_table_id = aws_route_table.public_route.id
 }
-resource "aws_internet_gateway_attachment" "example" {
-  internet_gateway_id = aws_internet_gateway.example.id
-  vpc_id              = aws_vpc.example.id
+##private route table association
+resource "aws_route_table_association" "b" {
+  subnet_id      = aws_subnet.private.id
+  route_table_id = aws_route_table.private_route.id
 }
-
-resource "aws_vpc" "Vcube138" {
-  cidr_block = "11.0.0.0/16"
-}
-
-resource "aws_internet_gateway" "amar-igw" {}
